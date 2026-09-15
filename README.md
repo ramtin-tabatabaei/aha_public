@@ -1,11 +1,11 @@
 # AHA publication version
 
-An organized, source-only version of the AHA workflow for verifying RLBench task
+An organized version of the AHA workflow for verifying RLBench task
 execution with behavior-tree conditions and live failure detectors. Each numbered
 stage has one `main.py`. The folder can be copied out of the original repository;
 its Python code does not import the original `aha_scripts` folder.
 
-**No files need to be copied from the research version.** Starting with an empty
+**No generated outputs are needed from the research version.** Starting with an empty
 `outputs/` folder, this release generates its own TTM context, screenshots,
 gripper-sequence JSON, descriptions, behavior trees, clean calibration data,
 thresholds, execution logs, and scores. Source models (`.ttm`), task YAMLs, and
@@ -30,27 +30,29 @@ Step 1 **inspects existing TTM models**; it does not create or modify `.ttm` mod
 
 ## Setup
 
-Use Python 3.10 or newer in the environment used by your AHA simulator backend.
-The simulator, PyRep, RLBench models, and AHA's modified `rlbench-failgen` backend
-are external dependencies. They are not bundled in this publication folder.
-Use the compatible simulator/PyRep/RLBench versions required by that backend;
-these scripts were developed around CoppeliaSim 4.1.
+This working folder includes local copies of CoppeliaSim 4.1, PyRep, RLBench
+(including task models), and AHA's modified `rlbench-failgen` in `external/`.
+Create a fresh Python 3.10 Conda environment **inside this folder**:
 
 ```bash
 cd AHA_publish_version
-python -m pip install -r requirements.txt
-
-export AHA_FAILGEN_ROOT=/absolute/path/to/rlbench-failgen
-export RLBENCH_ROOT=/absolute/path/to/RLBench
-export COPPELIASIM_ROOT=/absolute/path/to/CoppeliaSim
+bash scripts/create_local_env.sh
+source scripts/activate_local.sh
+python scripts/check_local_env.py
+python 01_ttm_context/main.py --task basketball_in_hoop
 ```
 
-`AHA_FAILGEN_ROOT` must contain `failgen/configs/*.yaml` and the `failgen` package.
-Install the backend's own requirements in this environment as well. `RLBENCH_ROOT`
-must contain `rlbench/task_ttms`, `rlbench/tasks`, and `rlbench/task_design.ttt`.
-Rendering requires a working OpenGL/X display, including for headless simulator
-runs. Configure `DISPLAY` for your machine; an existing simulator environment is
-recommended for the first run.
+The installer uses `.conda/aha-publish`, installs the Python dependencies, and
+builds PyRep against the local simulator. For each new terminal, run
+`source scripts/activate_local.sh`; this selects the new environment and replaces
+old research paths with paths inside this checkout. It does not use `setup_aha`
+or source your `.bashrc`.
+
+Linux system libraries, graphics drivers, an OpenGL/X display, and Conda itself
+are still host prerequisites. See [local setup](docs/local_setup.md) for details.
+The large `external/`, `.conda/`, and cache directories are ignored by Git;
+include `external/` when copying this working folder to another machine, then
+rebuild the environment there.
 
 For description generation, BT generation, or VLM verification, set the provider's
 key in the shell before running the command:
@@ -146,8 +148,9 @@ a configured simulator. Failures in a subprocess stop the current public command
 
 Steps 1–4 accept repeated `--task` arguments or `--all`. Calibration accepts
 repeated `--task`; with none specified, `collect`/`all` discover task YAMLs, while
-`compute` discovers existing clean-data folders. Prepare steps 1–3 for every task
-you intend to calibrate. Use `--workers` on calibration and running to control
+`compute` discovers existing clean-data folders. Calibration can run after step 1;
+it uses the local task model and task YAML and does not require descriptions or
+behavior trees. Use `--workers` on calibration and running to control
 simultaneous simulator instances; it defaults to one.
 
 Useful variants:
@@ -195,6 +198,9 @@ python src/aha_publish/behavior_trees/condition_rule_generator.py \
 ```
 
 ## Straightforward threshold calculation
+
+Run step 1 for the task first. Calibration collects simulator telemetry directly,
+so you can run it before description and behavior-tree generation (steps 2–3).
 
 Edit **`config/thresholds.json`**, then run:
 
@@ -323,6 +329,8 @@ AHA_publish_version/
 ├── LICENSE
 ├── requirements.txt
 ├── requirements-claude.txt
+├── requirements-simulator.txt
+├── scripts/                 # local Conda setup, activation, dependency checks
 ├── .env.example
 ├── run_pipeline.py           # generate every stage in order
 ├── 01_ttm_context/main.py
@@ -332,6 +340,8 @@ AHA_publish_version/
 ├── 05_scoring/main.py
 ├── calibration/main.py
 ├── config/thresholds.json
+├── external/                # local simulator and backend copies; ignored by Git
+├── .conda/aha-publish/       # independent Python environment; ignored by Git
 ├── src/aha_publish/
 │   ├── paths.py              # shared locations
 │   ├── commands.py           # command execution and validation
@@ -366,8 +376,8 @@ They also check fresh gripper capture before generation and run a copied
 publication worker with reads from the original checkout explicitly blocked.
 Simulator capture and provider calls are mocked in these isolation tests.
 The reorganization was also checked against one task's recorded clean telemetry.
-Full simulator and paid provider runs must be validated in the configured
-external environment.
+The local environment can also run simulator checks; paid provider stages need
+credentials and separate validation.
 
 The existing parent project's license is included unchanged in `LICENSE`.
 External simulator, backend, and model dependencies retain their own licenses.

@@ -222,7 +222,7 @@ def record_trace(
         # views every step -- the dominant per-step cost. Huge speedup. Enable it
         # only when we need the front/side photo at the detection frame.
         save_data=capture_images,
-        save_path="/tmp/aha_collision_torque_trace",
+        save_path=str(paths.BACKEND_DATA_DIR / 'collision_torque_trace'),
         save_keyframes_only=False,
     )
 

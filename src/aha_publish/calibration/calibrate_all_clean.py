@@ -107,10 +107,6 @@ def configure_env(headless=True):
 
 
 def available_tasks():
-    suffix = ".bt_conditions.json"
-    bt_dir = (paths.BT_DIR)
-    if bt_dir.exists():
-        return sorted(p.name[:-len(suffix)] for p in bt_dir.glob("*" + suffix))
     return sorted(p.stem for p in CONFIGS_PATH.glob("*.yaml"))
 
 
@@ -345,7 +341,7 @@ def run_task(task, episodes, max_attempts, show_sim=False):
         record=False,
         save_data=False,
         no_failures=True,
-        save_path="/tmp/aha_all_clean_baseline",
+        save_path=str(paths.BACKEND_DATA_DIR / 'calibration'),
         save_keyframes_only=True,
         max_failure_attempts=max_attempts,
     )
@@ -710,9 +706,9 @@ def run_one_subprocess(task, args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--task", action="append", default=[],
-                        help="Task to calibrate. Omit for all prepared tasks.")
+                        help="Task to calibrate. Omit for all configured tasks.")
     parser.add_argument("--tasks", type=int, default=None,
-                        help="Limit to first N prepared tasks when --task is omitted.")
+                        help="Limit to first N configured tasks when --task is omitted.")
     parser.add_argument("--episodes", type=int, default=10)
     parser.add_argument("--workers", type=int, default=1,
                         help="Parallel task subprocesses. Use 10 if your machine can handle it.")

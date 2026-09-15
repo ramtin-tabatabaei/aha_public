@@ -155,7 +155,7 @@ def process_task(task_name, capture_gripper, output_dir):
         headless=True,
         record=True,
         save_data=True,
-        save_path='/tmp/aha_screenshots',
+        save_path=str(paths.BACKEND_DATA_DIR / 'screenshots'),
         save_keyframes_only=False,
         no_failures=True,
     )

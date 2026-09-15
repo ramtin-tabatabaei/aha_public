@@ -4,6 +4,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
+.conda/
+.cache/
 .env
 .env.*
 !.env.example

@@ -2,7 +2,7 @@
 """Convert raw freezing-calibration telemetry -> per-task freezing baseline.
 
 Reads the raw clean/freeze telemetry collected by collect.py
-(/tmp/freeze_calib/data/<task>.json) and writes the published baseline
+(outputs/backend_data/freezing_calibration/<task>.json) and writes the published baseline
 (aha_output/freezing_stats/<task>.json) that the freezing detector reads.
 
 The baseline is computed from the CLEAN run only: per-frame distributions of
@@ -24,7 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
-RAW_DIR = Path('/tmp/freeze_calib/data')
+RAW_DIR = paths.BACKEND_DATA_DIR / 'freezing_calibration'
 STATS_DIR = (paths.OUTPUT_DIR / 'freezing_stats')
 
 JVN_FLOOR, JVN_CEIL = 0.045, 0.10

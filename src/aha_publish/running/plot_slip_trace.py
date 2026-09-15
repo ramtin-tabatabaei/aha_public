@@ -377,7 +377,7 @@ def record_trace(task_name, failtype, waypoint, failure_cfg, *, headless=True):
         record=False,
         save_data=True,
         no_failures=(failtype == "none"),
-        save_path="/tmp/aha_slip_trace",
+        save_path=str(paths.BACKEND_DATA_DIR / 'slip_trace'),
         save_keyframes_only=True,
     )
 

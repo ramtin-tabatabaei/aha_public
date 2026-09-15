@@ -40,7 +40,8 @@ def main():
     if args.action in ('collect', 'all'):
         for task in tasks:
             require(paths.TTM_CONTEXT_DIR / f'{task}.llm_context.json', args.dry_run)
-            require(paths.BT_DIR / f'{task}.bt_conditions.json', args.dry_run)
+            require(paths.CONFIGS_DIR / f'{task}.yaml', args.dry_run)
+            require(paths.RLBENCH_ROOT / 'rlbench/task_ttms' / f'{task}.ttm', args.dry_run)
         options = ['--episodes', args.episodes, '--workers', args.workers, '--out-root', paths.CALIBRATION_DIR,
                    '--force' if args.force else '--skip-completed']
         for task in tasks:

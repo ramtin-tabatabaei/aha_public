@@ -216,7 +216,7 @@ def extract(task_name: str, headless: bool = True, extras=frozenset()) -> dict:
 
     env = FailGenEnvWrapper(
         task_name=task_name, headless=headless, record=False,
-        save_data=False, save_path="/tmp", no_failures=True)
+        save_data=False, save_path=str(paths.BACKEND_DATA_DIR / 'gripper_sequences'), no_failures=True)
     try:
         env.reset()
         scene = env._env._scene

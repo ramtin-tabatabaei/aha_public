@@ -9,6 +9,7 @@ def location(name, default):
     return Path(os.environ.get(name) or default).expanduser().resolve()
 
 OUTPUT_DIR = location('AHA_OUTPUT_ROOT', PROJECT_ROOT / 'outputs')
+BACKEND_DATA_DIR = OUTPUT_DIR / 'backend_data'
 FAILGEN_ROOT = location('AHA_FAILGEN_ROOT', PROJECT_ROOT / 'external/rlbench-failgen')
 RLBENCH_ROOT = location('RLBENCH_ROOT', PROJECT_ROOT / 'external/RLBench')
 COPPELIASIM_ROOT = location('COPPELIASIM_ROOT', PROJECT_ROOT / 'external/CoppeliaSim')

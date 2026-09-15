@@ -184,7 +184,7 @@ def phase2(task_name):
         headless=True,
         record=False,
         save_data=False,
-        save_path='/tmp',
+        save_path=str(paths.BACKEND_DATA_DIR / 'ttm_context'),
     )
     env.reset()
 

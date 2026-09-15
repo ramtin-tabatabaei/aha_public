@@ -1,5 +1,6 @@
 """Portable CLI, scoring, and offline-to-live calibration regression checks."""
 import csv
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,6 +14,10 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
+# These tests copy portable source, not machine-specific environments or assets.
+SOURCE_COPY_IGNORE = shutil.ignore_patterns(
+    '__pycache__', 'outputs', '.git', '.conda', '.cache', '.venv', 'external',
+)
 
 
 class PublicWorkflowTests(unittest.TestCase):
@@ -21,7 +26,8 @@ class PublicWorkflowTests(unittest.TestCase):
         self.work = Path(self.temp.name)
         self.env = dict(os.environ, AHA_OUTPUT_ROOT=str(self.work / 'outputs'),
                         AHA_CALIBRATION_ROOT=str(self.work / 'outputs/calibration'),
-                        PYTHONPATH=str(ROOT / 'src'), MPLBACKEND='Agg')
+                        PYTHONPATH=str(ROOT / 'src'), MPLBACKEND='Agg',
+                        MPLCONFIGDIR=str(self.work / 'matplotlib'))
         self.env.pop('AHA_GRIP_FORCE_STATS_PATH', None)
 
     def tearDown(self):
@@ -77,6 +83,50 @@ class PublicWorkflowTests(unittest.TestCase):
         (folder / 'ep0.csv').write_text('waypoint\n')
         self.command('calibration/main.py', 'compute', '--task', 'example_task', '--raw-dir', folder.parent, ok=False)
         self.assertFalse((self.work / 'outputs').exists())
+
+    def test_calibration_collects_without_generated_behavior_trees(self):
+        spec = importlib.util.spec_from_file_location('calibration_cli', ROOT / 'calibration/main.py')
+        cli = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cli)
+        local = SimpleNamespace(
+            CALIBRATION_DIR=self.work / 'calibration',
+            TTM_CONTEXT_DIR=self.work / 'context',
+            CONFIGS_DIR=self.work / 'configs',
+            RLBENCH_ROOT=self.work / 'RLBench',
+            BT_DIR=self.work / 'missing_behavior_trees',
+        )
+        inputs = [local.TTM_CONTEXT_DIR / 'example_task.llm_context.json',
+                  local.CONFIGS_DIR / 'example_task.yaml',
+                  local.RLBENCH_ROOT / 'rlbench/task_ttms/example_task.ttm']
+        for path in inputs:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('{}')
+        config = json.loads((ROOT / 'config/thresholds.json').read_text())
+        config['collision']['method'] = 2
+        settings = self.work / 'settings.json'
+        settings.write_text(json.dumps(config))
+        raw = self.raw_episodes()
+
+        def collect(module, *args):
+            self.assertEqual(module, 'calibration.calibrate_all_clean')
+            shutil.copytree(raw, local.CALIBRATION_DIR / 'clean_data')
+
+        argv = ['calibration/main.py', 'collect', '--task', 'example_task',
+                '--episodes', '2', '--config', str(settings)]
+        with mock.patch.object(cli, 'paths', local), \
+             mock.patch.object(sys, 'argv', argv), \
+             mock.patch.object(cli, 'run', side_effect=collect) as worker:
+            cli.main()
+            worker.assert_called_once()
+            self.assertFalse(local.BT_DIR.exists())
+            for path in inputs[1:]:
+                with self.subTest(missing=path.name):
+                    path.unlink()
+                    worker.reset_mock()
+                    with self.assertRaisesRegex(ValueError, 'Missing input:'):
+                        cli.main()
+                    worker.assert_not_called()
+                    path.write_text('{}')
 
     def test_calibration_reports_match_live_detectors_with_custom_settings(self):
         raw = self.raw_episodes()
@@ -209,7 +259,7 @@ print(json.dumps(d.residual_threshold_vector(stats).tolist()))
 
     def test_folder_can_be_copied_away_from_original_repository(self):
         destination = self.work / 'standalone'
-        shutil.copytree(ROOT, destination, ignore=shutil.ignore_patterns('__pycache__', 'outputs'))
+        shutil.copytree(ROOT, destination, ignore=SOURCE_COPY_IGNORE)
         env = dict(self.env, PYTHONPATH='')
         result = subprocess.run([sys.executable, str(destination / '03_behavior_trees/main.py'), '--task', 'example_task', '--dry-run'], env=env, cwd=self.work, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -230,7 +280,7 @@ print(json.dumps(d.residual_threshold_vector(stats).tolist()))
 
     def test_workers_ignore_the_original_checkout_and_old_artifact_overrides(self):
         destination = self.work / 'standalone'
-        shutil.copytree(ROOT, destination, ignore=shutil.ignore_patterns('__pycache__', 'outputs'))
+        shutil.copytree(ROOT, destination, ignore=SOURCE_COPY_IGNORE)
         legacy = self.work / 'old_checkout'
         legacy.mkdir()
         (legacy / 'legacy_module_marker.py').write_text('raise AssertionError("old checkout imported")\n')
@@ -241,10 +291,13 @@ from pathlib import Path
 import sys
 from aha_publish import paths
 forbidden = Path(os.environ['AHA_TEST_FORBIDDEN_ROOT'])
+# The local Conda interpreter and TMPDIR may both live inside that checkout.
+# Allow the runtime and relocated copy, while still blocking original sources.
+allowed = (paths.PROJECT_ROOT.resolve(), Path(sys.prefix).resolve())
 def audit(event, args):
     if event == 'open' and isinstance(args[0], (str, bytes)):
         filename = Path(os.fsdecode(args[0])).resolve()
-        if filename.is_relative_to(forbidden):
+        if filename.is_relative_to(forbidden) and not any(filename.is_relative_to(p) for p in allowed):
             raise AssertionError('Read from the original checkout: ' + str(filename))
 sys.addaudithook(audit)
 assert Path.cwd() == paths.PROJECT_ROOT

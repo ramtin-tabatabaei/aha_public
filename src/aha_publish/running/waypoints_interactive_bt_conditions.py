@@ -3225,7 +3225,7 @@ def main():
         headless=args.headless,
         record=False,
         save_data=True,
-        save_path='/tmp/aha_label',
+        save_path=str(paths.BACKEND_DATA_DIR / 'running'),
         save_keyframes_only=False,
     )
     configure_failure(env_wrapper, task_config, failtype, failure_waypoint)
