@@ -181,6 +181,19 @@ or calibration if you need fresh results. A new output root can keep experiments
 separate. Step 3 regenerates the selected task's BT. Step 1 can skip existing
 reports with `--skip-existing`.
 
+### Condition-rule catalogue
+
+The behavior-tree generator loads
+`src/aha_publish/behavior_trees/generated_condition_rules.json`. Its generator,
+`condition_rule_generator.py`, lives in the same directory and writes there by
+default. To regenerate the catalogue, provide an authored taxonomy input JSON
+(not bundled in this release) and set `OPENAI_API_KEY`:
+
+```bash
+python src/aha_publish/behavior_trees/condition_rule_generator.py \
+  --input /path/to/condition_taxonomy_input.example.json
+```
+
 ## Straightforward threshold calculation
 
 Edit **`config/thresholds.json`**, then run:
