@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BT Condition Studio</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #65706f;
+      --paper: #fbfaf7;
+      --line: #dedbd2;
+      --teal: #15616d;
+      --coral: #ff6f59;
+      --amber: #f6c445;
+      --blue: #4c6f91;
+      --green: #3d8b68;
+      --white: #ffffff;
+      --shadow: 0 18px 45px rgba(32, 33, 36, 0.11);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(21, 97, 109, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255, 111, 89, 0.05) 1px, transparent 1px),
+        var(--paper);
+      background-size: 44px 44px;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 250, 247, 0.94);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar-inner {
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 18px 24px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .mark {
+      width: 42px;
+      height: 42px;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      background: var(--amber);
+      box-shadow: 5px 5px 0 var(--teal);
+      flex: 0 0 auto;
+    }
+
+    .mark svg {
+      width: 26px;
+      height: 26px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subline {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      min-height: 40px;
+      border-radius: var(--radius);
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+      background: var(--white);
+      border: 1px solid var(--line);
+      box-shadow: 0 2px 0 rgba(32, 33, 36, 0.12);
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      color: #ffffff;
+      background: var(--teal);
+      border-color: #0d4650;
+    }
+
+    .btn.save {
+      color: var(--ink);
+      background: var(--amber);
+      border-color: #c59b22;
+    }
+
+    .btn:disabled {
+      cursor: wait;
+      opacity: 0.62;
+    }
+
+    .status {
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 0 24px 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .layout {
+      max-width: 1460px;
+      margin: 0 auto;
+      padding: 22px 24px 44px;
+      display: grid;
+      grid-template-columns: 286px minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+    }
+
+    .rail,
+    .control-strip,
+    .stage-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .rail {
+      position: sticky;
+      top: 110px;
+      padding: 14px;
+    }
+
+    .rail-title {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stage-link {
+      width: 100%;
+      margin: 0 0 9px;
+      padding: 12px;
+      border-radius: var(--radius);
+      text-align: left;
+      background: #f4f1e8;
+      border: 1px solid transparent;
+      color: var(--ink);
+    }
+
+    .stage-link:hover,
+    .stage-link.active {
+      border-color: var(--teal);
+      background: #e9f4f4;
+    }
+
+    .stage-link strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .stage-link span {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .workspace {
+      min-width: 0;
+    }
+
+    .control-strip {
+      margin-bottom: 18px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 16px;
+    }
+
+    .field label,
+    .note-field label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    textarea,
+    .condition-input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #ffffff;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 98px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    textarea:focus,
+    .condition-input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(21, 97, 109, 0.14);
+    }
+
+    .meta-stack {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .meta-pill {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #faf7ed;
+      overflow-wrap: anywhere;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .meta-pill strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--teal);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stage-panel {
+      margin-bottom: 18px;
+      overflow: hidden;
+    }
+
+    .stage-head {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      border-bottom: 1px solid var(--line);
+      background: #ffffff;
+    }
+
+    .stage-number {
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius);
+      display: grid;
+      place-items: center;
+      color: #ffffff;
+      background: var(--coral);
+      font-weight: 900;
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+
+    .stage-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .stage-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .stage-primitive {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 2px solid var(--ink);
+      background: var(--coral);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      box-shadow: 2px 2px 0 var(--ink);
+      white-space: nowrap;
+    }
+
+    .stage-primitive.is-none {
+      background: #ffffff;
+      color: var(--muted);
+    }
+
+    .stage-summary {
+      margin: 6px 0 0;
+      color: var(--muted);
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .stage-body {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .condition-section {
+      min-width: 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .small-btn {
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #f4f1e8;
+      border: 1px solid var(--line);
+      font-size: 13px;
+    }
+
+    .condition-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .condition-row {
+      position: relative;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--blue);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+
+    .condition-row[data-kind="postconditions"] {
+      border-left-color: var(--green);
+    }
+
+    .condition-top {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .use-check {
+      width: 18px;
+      height: 18px;
+      margin-top: 9px;
+      accent-color: var(--teal);
+    }
+
+    .condition-input {
+      min-height: 38px;
+      padding: 8px 10px;
+      line-height: 1.35;
+    }
+
+    .failure-select {
+      width: 100%;
+      min-height: 34px;
+      margin-top: 8px;
+      padding: 6px 8px;
+      border-radius: var(--radius);
+      border: 1px solid #eadfc4;
+      background: #fffdf4;
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .remove-condition {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius);
+      border: 1px solid #e2c9c1;
+      background: #fff0ec;
+      color: #8c2f20;
+      font-size: 18px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+    }
+
+    .failure-list {
+      margin-top: 10px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .failure-chip {
+      padding: 8px 9px;
+      border-radius: var(--radius);
+      border: 1px solid #eadfc4;
+      background: #fff8e4;
+      color: #604615;
+      font-size: 12px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .failure-chip strong {
+      color: var(--ink);
+      margin-right: 5px;
+    }
+
+    .hold-section {
+      grid-column: 1 / -1;
+      margin-top: 2px;
+    }
+
+    .hold-sub {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-transform: none;
+      color: var(--muted);
+    }
+
+    .hold-list {
+      grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
+    }
+
+    .hold-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--amber);
+      border-radius: var(--radius);
+      background: #fffdf6;
+    }
+
+    .hold-cond {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .hold-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+    }
+
+    .remove-hold {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius);
+      border: 1px solid #e2c9c1;
+      background: #fff0ec;
+      color: #8c2f20;
+      font-size: 16px;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+    }
+
+    .detector-chip {
+      flex: none;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #fdf0d2;
+      border: 1px solid #eadfc4;
+      color: #6b5618;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .detector-chip .chip-key {
+      font-weight: 600;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 2px;
+    }
+
+    .reason-tooltip {
+      position: fixed;
+      z-index: 30;
+      width: min(360px, calc(100vw - 32px));
+      padding: 12px 13px;
+      border: 1px solid #c9ddd8;
+      border-radius: var(--radius);
+      color: var(--ink);
+      background: #ffffff;
+      box-shadow: 0 14px 34px rgba(32, 33, 36, 0.18);
+      font-size: 12px;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+
+    .reason-tooltip.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reason-tooltip strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--teal);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .empty-state {
+      padding: 18px;
+      border: 1px dashed #bcb6a7;
+      border-radius: var(--radius);
+      color: var(--muted);
+      background: #fbfaf7;
+      line-height: 1.45;
+    }
+
+    .note-field {
+      grid-column: 1 / -1;
+      padding-top: 2px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 20;
+      max-width: 420px;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      color: #ffffff;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      transform: translateY(16px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 160ms ease, transform 160ms ease;
+      overflow-wrap: anywhere;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 980px) {
+      .topbar-inner,
+      .layout,
+      .control-strip,
+      .stage-body {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .rail {
+        position: static;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 8px;
+      }
+
+      .rail-title {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar-inner,
+      .status,
+      .layout {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      .stage-head {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-number {
+        width: 40px;
+        height: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 21h7l4-10h7"></path>
+            <path d="M10 21v5"></path>
+            <path d="M22 11V6"></path>
+            <path d="M4 26h11"></path>
+            <path d="M18 6h8"></path>
+          </svg>
+        </div>
+        <div>
+          <h1>BT Condition Studio</h1>
+          <div class="subline" id="headline">Loading task context</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="generateBtn" type="button">Generate Conditions</button>
+        <button class="btn save" id="saveBtn" type="button">Save Review</button>
+      </div>
+    </div>
+    <div class="status" id="status">Starting local workspace...</div>
+  </header>
+
+  <main class="layout">
+    <aside class="rail" id="stageRail">
+      <p class="rail-title">Stages</p>
+    </aside>
+
+    <section class="workspace">
+      <div class="control-strip">
+        <div class="field">
+          <label for="guidance">Missing details or generation guidance</label>
+          <textarea id="guidance" placeholder="Example: add a check for ball release at the rim, or focus more on gripper contact force."></textarea>
+        </div>
+        <div class="meta-stack">
+          <div class="meta-pill"><strong>Provider</strong><span id="providerMeta">-</span></div>
+          <div class="meta-pill"><strong>Waypoint JSON</strong><span id="taskMeta">-</span></div>
+          <div class="meta-pill"><strong>Failure JSON</strong><span id="failureMeta">-</span></div>
+        </div>
+      </div>
+      <div id="stageWorkspace"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+  <div class="reason-tooltip" id="reasonTooltip" role="tooltip" aria-hidden="true"></div>
+
+  <script>
+    const state = {
+      bootstrap: null,
+      generated: null,
+      busy: false
+    };
+
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const text = await response.text();
+      let data = {};
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (error) {
+          data = { error: text };
+        }
+      }
+      if (!response.ok) {
+        throw new Error(data.error || response.statusText);
+      }
+      return data;
+    }
+
+    function setBusy(isBusy, label = "Working...") {
+      state.busy = isBusy;
+      $("#generateBtn").disabled = isBusy;
+      $("#saveBtn").disabled = isBusy;
+      if (isBusy) {
+        setStatus(label);
+      }
+    }
+
+    function setStatus(message) {
+      $("#status").textContent = message;
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => toast.classList.remove("show"), 3400);
+    }
+
+    function reasonTextForLinks(failureLinks) {
+      const reasons = failureLinks
+        .map((link) => String(link?.reason || "").trim())
+        .filter(Boolean);
+      if (reasons.length) {
+        return reasons.join(" ");
+      }
+      return "This condition checks a concrete object, gripper, placement, or selection state.";
+    }
+
+    function tooltipTextForRow(row) {
+      const reasons = $$(".failure-chip", row)
+        .map((chip) => chip.dataset.reason || chip.textContent)
+        .map((reason) => reason.trim())
+        .filter(Boolean);
+      if (reasons.length) {
+        return reasons.join(" ");
+      }
+      return row.dataset.reason || "This condition checks a concrete object, gripper, placement, or selection state.";
+    }
+
+    function placeTooltip(row) {
+      const tooltip = $("#reasonTooltip");
+      const rect = row.getBoundingClientRect();
+      const margin = 12;
+      const top = Math.min(
+        window.innerHeight - tooltip.offsetHeight - margin,
+        Math.max(margin, rect.bottom + 8)
+      );
+      const left = Math.min(
+        window.innerWidth - tooltip.offsetWidth - margin,
+        Math.max(margin, rect.left)
+      );
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+    }
+
+    function showReasonTooltip(row) {
+      const tooltip = $("#reasonTooltip");
+      tooltip.innerHTML = `<strong>Why this condition</strong>${escapeHtml(tooltipTextForRow(row))}`;
+      tooltip.classList.add("show");
+      tooltip.setAttribute("aria-hidden", "false");
+      placeTooltip(row);
+    }
+
+    function hideReasonTooltip() {
+      const tooltip = $("#reasonTooltip");
+      window.clearTimeout(showReasonTooltip.timer);
+      tooltip.classList.remove("show");
+      tooltip.setAttribute("aria-hidden", "true");
+    }
+
+    function scheduleReasonTooltip(row) {
+      hideReasonTooltip();
+      showReasonTooltip.timer = window.setTimeout(() => showReasonTooltip(row), 2000);
+    }
+
+    function failureOptionsHtml(selectedFailure) {
+      const categories = state.bootstrap?.failure_categories || [];
+      if (!categories.length) {
+        return `<option value="${escapeHtml(selectedFailure || "ExecutionSequenceMismatch")}">${escapeHtml(selectedFailure || "ExecutionSequenceMismatch")}</option>`;
+      }
+      return categories.map((category) => {
+        const id = category.id || "";
+        const selected = id === selectedFailure ? "selected" : "";
+        return `<option value="${escapeHtml(id)}" ${selected}>${escapeHtml(id)}</option>`;
+      }).join("");
+    }
+
+    function failureCategoryById(id) {
+      return (state.bootstrap?.failure_categories || []).find((category) => category.id === id);
+    }
+
+    function reasonForFailure(id, fallback = "") {
+      const category = failureCategoryById(id);
+      return category?.definition || fallback || `Checks ${id}.`;
+    }
+
+    function primaryFailureLink(condition) {
+      const links = Array.isArray(condition?.failure_links) ? condition.failure_links : [];
+      return links[0] || {
+        failure: "ExecutionSequenceMismatch",
+        reason: "Acts as a checkable guard for whether this stage is in the expected execution state."
+      };
+    }
+
+    function conditionRowHtml(kind, condition, index) {
+      const text = condition?.condition || "";
+      const failureLink = primaryFailureLink(condition);
+      const checked = condition?.selected === false ? "" : "checked";
+      const reasonText = reasonTextForLinks([failureLink]);
+      const failureHtml = `
+        <div class="failure-list">
+          <div class="failure-chip" data-reason="${escapeHtml(failureLink.reason || "")}">
+            <strong>${escapeHtml(failureLink.failure || "failure")}</strong>${escapeHtml(failureLink.reason || "Related to this condition.")}
+          </div>
+        </div>
+      `;
+
+      return `
+        <div class="condition-row" data-kind="${kind}" data-original="${escapeHtml(text)}" data-reason="${escapeHtml(reasonText)}">
+          <div class="condition-top">
+            <input class="use-check" type="checkbox" ${checked} aria-label="Use condition ${index + 1}">
+            <div>
+              <input class="condition-input" value="${escapeHtml(text)}" placeholder="Write a checkable condition">
+              <select class="failure-select" aria-label="Failure type">${failureOptionsHtml(failureLink.failure || "ExecutionSequenceMismatch")}</select>
+              ${failureHtml}
+            </div>
+            <button class="remove-condition" type="button" data-remove-condition aria-label="Remove condition">&times;</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function sectionHtml(stageIndex, kind, title, conditions) {
+      const rows = conditions.length
+        ? conditions.map((condition, index) => conditionRowHtml(kind, condition, index)).join("")
+        : `<div class="empty-state">No ${title.toLowerCase()} yet.</div>`;
+
+      return `
+        <div class="condition-section">
+          <div class="section-head">
+            <h3>${title}</h3>
+            <button class="small-btn" type="button" data-add-kind="${kind}" data-stage-index="${stageIndex}">Add</button>
+          </div>
+          <div class="condition-list" data-list-kind="${kind}">${rows}</div>
+        </div>
+      `;
+    }
+
+    function holdConditionRowHtml(condition) {
+      const text = condition?.condition || "";
+      const detector = condition?.detector || "";
+      const label = condition?.label || detector || "detector";
+      const definition = condition?.definition || "";
+      const failure = condition?.failure
+        || condition?.failure_links?.[0]?.failure
+        || detector
+        || "failure";
+      return `
+        <div class="hold-row" data-detector="${escapeHtml(detector)}" data-failure="${escapeHtml(failure)}" data-condition="${escapeHtml(text)}" data-label="${escapeHtml(label)}" data-definition="${escapeHtml(definition)}" data-reason="${escapeHtml(definition)}">
+          <code class="hold-cond">${escapeHtml(text)}</code>
+          <div class="hold-row-actions">
+            <span class="detector-chip" title="${escapeHtml(label)} — fails with: ${escapeHtml(failure)}"><span class="chip-key">fails:</span> ${escapeHtml(failure)}</span>
+            <button class="remove-hold" type="button" data-remove-hold aria-label="Remove hold condition" title="Remove this hold condition">&times;</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function holdSectionHtml(conditions) {
+      const list = Array.isArray(conditions) ? conditions : [];
+      const rows = list.length
+        ? list.map((condition) => holdConditionRowHtml(condition)).join("")
+        : `<div class="empty-state">No hold conditions.</div>`;
+      return `
+        <div class="condition-section hold-section">
+          <div class="section-head">
+            <h3>Hold conditions <span class="hold-sub">· detectors active for the whole stage</span></h3>
+          </div>
+          <div class="condition-list hold-list" data-list-kind="hold_conditions">${rows}</div>
+        </div>
+      `;
+    }
+
+    function taskSummaryFor(stageNumber) {
+      const taskStage = (state.bootstrap?.task_stages || []).find((item) => String(item.stage) === String(stageNumber));
+      return taskStage?.summary || "";
+    }
+
+    function renderStageRail(stages) {
+      const rail = $("#stageRail");
+      rail.innerHTML = `<p class="rail-title">Stages</p>` + stages.map((stage) => `
+        <button class="stage-link" type="button" data-scroll-stage="${escapeHtml(stage.stage)}">
+          <strong>Stage ${escapeHtml(stage.stage)}</strong>
+          <span>${escapeHtml(stage.summary || stage.name || "No summary")}</span>
+        </button>
+      `).join("");
+    }
+
+    function renderStages() {
+      const generatedStages = state.generated?.stages || [];
+      const taskStages = state.bootstrap?.task_stages || [];
+      const stages = generatedStages.length
+        ? generatedStages.map((stage) => ({
+            ...stage,
+            summary: taskSummaryFor(stage.stage)
+          }))
+        : taskStages.map((stage) => ({
+            stage: stage.stage,
+            name: `Stage ${stage.stage}`,
+            summary: stage.summary,
+            preconditions: [],
+            postconditions: [],
+            hold_conditions: []
+          }));
+
+      renderStageRail(stages);
+
+      $("#stageWorkspace").innerHTML = stages.map((stage, stageIndex) => `
+        <section class="stage-panel" id="stage-${escapeHtml(stage.stage)}" data-stage="${escapeHtml(stage.stage)}" data-stage-name="${escapeHtml(stage.name || `Stage ${stage.stage}`)}" data-primitive="${escapeHtml(stage.primitive || "")}">
+          <div class="stage-head">
+            <div class="stage-number">${escapeHtml(stage.stage)}</div>
+            <div>
+              <div class="stage-title-row">
+                <h2 class="stage-title">${escapeHtml(stage.name || `Stage ${stage.stage}`)}</h2>
+                <span class="stage-primitive${stage.primitive ? "" : " is-none"}" title="Step-1 motion primitive for this waypoint">${escapeHtml(stage.primitive || "no primitive")}</span>
+              </div>
+              <p class="stage-summary">${escapeHtml(stage.summary || "No stage summary found in the task JSON.")}</p>
+            </div>
+          </div>
+          <div class="stage-body">
+            ${sectionHtml(stageIndex, "preconditions", "Preconditions", stage.preconditions || [])}
+            ${sectionHtml(stageIndex, "postconditions", "Postconditions", stage.postconditions || [])}
+            ${holdSectionHtml(stage.hold_conditions || [])}
+            <div class="note-field">
+              <label>What is missing in this stage?</label>
+              <textarea class="missing-note" placeholder="Describe any missing state, sensor check, geometric relation, or safety condition.">${escapeHtml(stage.missing_description || "")}</textarea>
+            </div>
+          </div>
+        </section>
+      `).join("");
+    }
+
+    async function generateConditions() {
+      setBusy(true, "Generating condition candidates from the configured model...");
+      try {
+        const data = await api("/api/generate", {
+          method: "POST",
+          body: JSON.stringify({ guidance: $("#guidance").value })
+        });
+        state.generated = data.result;
+        renderStages();
+        if (data.saved_path) {
+          setStatus(`Generated and saved to ${data.saved_path}. Edit and save again to refine.`);
+          showToast("Condition candidates generated and saved.");
+        } else {
+          setStatus("Generated condition candidates. Add, remove, edit, and save when ready.");
+          showToast("Condition candidates generated.");
+        }
+      } catch (error) {
+        setStatus(`Model generation failed: ${error.message}`);
+        showToast("Generation failed. Check the API key and try again.");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function gatherReview() {
+      const parseStageValue = (value) => {
+        const numeric = Number(value);
+        return Number.isNaN(numeric) ? value : numeric;
+      };
+
+      return {
+        guidance: $("#guidance").value,
+        stages: $$(".stage-panel").map((panel) => {
+          const stageReview = {
+            stage: parseStageValue(panel.dataset.stage),
+            name: panel.dataset.stageName,
+            primitive: panel.dataset.primitive || null,
+            summary: $(".stage-summary", panel)?.textContent || "",
+            missing_description: $(".missing-note", panel)?.value || "",
+            preconditions: [],
+            postconditions: []
+          };
+
+          $$(".condition-row", panel).forEach((row) => {
+            const kind = row.dataset.kind;
+            const input = $(".condition-input", row);
+            const failureSelect = $(".failure-select", row);
+            const failureChip = $(".failure-chip", row);
+            const failure = failureSelect?.value || "ExecutionSequenceMismatch";
+            stageReview[kind].push({
+              selected: $(".use-check", row).checked,
+              condition: input.value,
+              original_condition: row.dataset.original || "",
+              alternatives: [],
+              failure_links: [{
+                failure,
+                reason: reasonForFailure(failure, failureChip?.dataset.reason)
+              }]
+            });
+          });
+
+          // Hold conditions are deterministic detector invariants (read-only in
+          // the UI); capture them so the saved file is self-contained.
+          stageReview.hold_conditions = $$(".hold-row", panel).map((row) => ({
+            condition: row.dataset.condition || "",
+            detector: row.dataset.detector || "",
+            failure: row.dataset.failure || "",
+            label: row.dataset.label || "",
+            definition: row.dataset.definition || "",
+            alternatives: [],
+            selected: true,
+            failure_links: row.dataset.failure
+              ? [{ failure: row.dataset.failure, reason: row.dataset.definition || "" }]
+              : []
+          }));
+
+          return stageReview;
+        })
+      };
+    }
+
+    async function saveReview() {
+      setBusy(true, "Saving review JSON...");
+      try {
+        const data = await api("/api/save", {
+          method: "POST",
+          body: JSON.stringify({
+            generated: state.generated,
+            review: gatherReview()
+          })
+        });
+        setStatus(`Saved review JSON to ${data.path}`);
+        showToast(`Saved to ${data.path}`);
+      } catch (error) {
+        setStatus(`Save failed: ${error.message}`);
+        showToast(error.message);
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    function addCondition(button) {
+      const panel = button.closest(".stage-panel");
+      const kind = button.dataset.addKind;
+      const list = $(`[data-list-kind="${kind}"]`, panel);
+      const empty = $(".empty-state", list);
+      if (empty) {
+        empty.remove();
+      }
+      list.insertAdjacentHTML("beforeend", conditionRowHtml(kind, { condition: "", alternatives: [] }, $$(".condition-row", list).length));
+      const input = $(".condition-row:last-child .condition-input", list);
+      if (input) {
+        input.focus();
+      }
+    }
+
+    function removeCondition(button) {
+      const list = button.closest(".condition-list");
+      const row = button.closest(".condition-row");
+      row.remove();
+      if (!$(".condition-row", list)) {
+        const title = list.dataset.listKind === "preconditions" ? "preconditions" : "postconditions";
+        list.innerHTML = `<div class="empty-state">No ${title} yet.</div>`;
+      }
+      hideReasonTooltip();
+      showToast("Condition removed.");
+    }
+
+    function removeHoldCondition(button) {
+      const list = button.closest(".condition-list");
+      const row = button.closest(".hold-row");
+      row.remove();
+      if (!$(".hold-row", list)) {
+        list.innerHTML = `<div class="empty-state">No hold conditions.</div>`;
+      }
+      hideReasonTooltip();
+      showToast("Hold condition removed.");
+    }
+
+    function updateFailureBlock(select) {
+      const row = select.closest(".condition-row");
+      const chip = $(".failure-chip", row);
+      const failure = select.value || "ExecutionSequenceMismatch";
+      const reason = reasonForFailure(failure);
+      if (chip) {
+        chip.dataset.reason = reason;
+        chip.innerHTML = `<strong>${escapeHtml(failure)}</strong>${escapeHtml(reason)}`;
+      }
+      row.dataset.reason = reason;
+      if ($("#reasonTooltip").classList.contains("show")) {
+        showReasonTooltip(row);
+      }
+    }
+
+    function wireEvents() {
+      $("#generateBtn").addEventListener("click", generateConditions);
+      $("#saveBtn").addEventListener("click", saveReview);
+
+      document.addEventListener("click", (event) => {
+        const removeHold = event.target.closest("[data-remove-hold]");
+        if (removeHold) {
+          removeHoldCondition(removeHold);
+          return;
+        }
+
+        const remove = event.target.closest("[data-remove-condition]");
+        if (remove) {
+          removeCondition(remove);
+          return;
+        }
+
+        const add = event.target.closest("[data-add-kind]");
+        if (add) {
+          addCondition(add);
+          return;
+        }
+
+        const scroll = event.target.closest("[data-scroll-stage]");
+        if (scroll) {
+          const target = $(`#stage-${CSS.escape(scroll.dataset.scrollStage)}`);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+      });
+
+      document.addEventListener("change", (event) => {
+        const select = event.target.closest(".failure-select");
+        if (select) {
+          updateFailureBlock(select);
+        }
+      });
+
+      document.addEventListener("mouseover", (event) => {
+        const row = event.target.closest(".condition-row, .hold-row");
+        if (row && !row.contains(event.relatedTarget)) {
+          scheduleReasonTooltip(row);
+        }
+      });
+
+      document.addEventListener("mouseout", (event) => {
+        const row = event.target.closest(".condition-row, .hold-row");
+        if (row && !row.contains(event.relatedTarget)) {
+          hideReasonTooltip();
+        }
+      });
+
+      document.addEventListener("focusin", (event) => {
+        const row = event.target.closest(".condition-row");
+        if (row) {
+          scheduleReasonTooltip(row);
+        }
+      });
+
+      document.addEventListener("focusout", (event) => {
+        if (event.target.closest(".condition-row")) {
+          hideReasonTooltip();
+        }
+      });
+
+      window.addEventListener("scroll", hideReasonTooltip, { passive: true });
+      window.addEventListener("resize", hideReasonTooltip);
+    }
+
+    async function init() {
+      wireEvents();
+      try {
+        const data = await api("/api/bootstrap");
+        state.bootstrap = data;
+        $("#providerMeta").textContent = data.provider;
+        $("#taskMeta").textContent = data.waypoint_json_path || data.task_context_path;
+        $("#failureMeta").textContent = data.failure_definitions_path;
+        $("#headline").textContent = data.overall_description || "Review stage conditions";
+        state.generated = data.saved_conditions;
+        if (data.saved_conditions) {
+          renderStages();
+          setStatus(`Loaded saved conditions from ${data.saved_conditions_source_path || data.review_output_path}. Edit them or generate a fresh draft.`);
+        } else if (data.auto_generate_on_load) {
+          renderStages();
+          await generateConditions();
+        } else {
+          renderStages();
+          setStatus("No saved conditions found. Click Generate Conditions to create them from the API.");
+        }
+      } catch (error) {
+        $("#headline").textContent = "Configuration needs attention";
+        setStatus(error.message);
+        $("#stageWorkspace").innerHTML = `<div class="stage-panel"><div class="empty-state">${escapeHtml(error.message)}</div></div>`;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

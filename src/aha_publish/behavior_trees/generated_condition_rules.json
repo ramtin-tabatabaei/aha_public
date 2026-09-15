@@ -1,0 +1,280 @@
+{
+  "taxonomy_name": "Failure-linked waypoint verification conditions",
+  "categories": [
+    {
+      "category": "Object State",
+      "category_explanation": "Conditions confirming the perceptual availability and correct selection of task-relevant objects.",
+      "rules": [
+        {
+          "source_condition_id": "PG-01",
+          "category": "Object State",
+          "failure": "ObjectNotFound",
+          "predicate_template": "Object_found(<object_1>, <object_2>, ...) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": "precondition",
+            "applicable_primitives": [
+              "move"
+            ],
+            "per_primitive": null,
+            "occurrence": "once_per_task"
+          },
+          "generation_rule": "Instantiate the predicate with all task-relevant objects the robot will interact with in the task.",
+          "prohibitions": []
+        },
+        {
+          "source_condition_id": "PG-02",
+          "category": "Object State",
+          "failure": "WrongObjectSelection",
+          "predicate_template": "selected_object(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": "precondition",
+            "applicable_primitives": [
+              "grasp"
+            ],
+            "per_primitive": null,
+            "occurrence": "once_per_new_object_interaction"
+          },
+          "generation_rule": "Instantiate <object> as the task-relevant object the robot is about to grasp and verify it is the selected object.",
+          "prohibitions": []
+        }
+      ]
+    },
+    {
+      "category": "Spatial Relationship",
+      "category_explanation": "Conditions confirming that the end effector has the required position and orientation before interaction.",
+      "rules": [
+        {
+          "source_condition_id": "SR-01",
+          "category": "Spatial Relationship",
+          "failure": "WrongPosition",
+          "predicate_template": "end_effector_aligned_with(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": "precondition",
+            "applicable_primitives": [
+              "grasp",
+              "push"
+            ],
+            "per_primitive": null,
+            "occurrence": "once_per_new_object_interaction"
+          },
+          "generation_rule": "Instantiate <object> as each task-relevant object the robot newly prepares to grasp or contact by pushing/pressing.",
+          "prohibitions": []
+        },
+        {
+          "source_condition_id": "SR-02",
+          "category": "Spatial Relationship",
+          "failure": "WrongOrientation",
+          "predicate_template": "gripper_oriented_for(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": "precondition",
+            "applicable_primitives": [
+              "grasp"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate <object> as the object to be grasped at each grasp waypoint.",
+          "prohibitions": []
+        }
+      ]
+    },
+    {
+      "category": "Grasp",
+      "category_explanation": "Conditions confirming the grasp, release, and contact states required by the action sequence.",
+      "rules": [
+        {
+          "source_condition_id": "G-01",
+          "category": "Grasp",
+          "failure": "GraspStateFailure",
+          "predicate_template": "object_in_gripper(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": [
+              "precondition",
+              "postcondition"
+            ],
+            "applicable_primitives": [
+              "grasp",
+              "transport",
+              "place",
+              "release"
+            ],
+            "per_primitive": [
+              {
+                "primitive": "grasp",
+                "check_type": [
+                  "postcondition"
+                ]
+              },
+              {
+                "primitive": "transport",
+                "check_type": [
+                  "precondition",
+                  "postcondition"
+                ]
+              },
+              {
+                "primitive": "place",
+                "check_type": [
+                  "precondition",
+                  "postcondition"
+                ]
+              },
+              {
+                "primitive": "release",
+                "check_type": [
+                  "precondition"
+                ]
+              }
+            ],
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate <object> as the manipulated object that is grasped, carried, placed, and then released in the grasp-based transfer run.",
+          "prohibitions": [
+            "Do not check this predicate as a precondition on the grasp waypoint."
+          ]
+        },
+        {
+          "source_condition_id": "G-02",
+          "category": "Grasp",
+          "failure": "ReleaseStateFailure",
+          "predicate_template": "gripper_released(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "release"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate <object> as the released task object and verify it is no longer held after the release waypoint.",
+          "prohibitions": []
+        },
+        {
+          "source_condition_id": "G-03",
+          "category": "Grasp",
+          "failure": "ContactStateFailure",
+          "predicate_template": "end_effector_in_contact_with(<object>) == True",
+          "predicate_meaning": null,
+          "timing": {
+            "check_type": [
+              "precondition",
+              "postcondition"
+            ],
+            "applicable_primitives": [
+              "push"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate <object> as each task object the end effector non-graspingly contacts during a push run.",
+          "prohibitions": [
+            "Exclude the precondition check on the first push waypoint of each contact run."
+          ]
+        }
+      ]
+    },
+    {
+      "category": "Goal",
+      "category_explanation": "Conditions confirming the task-specified qualitative relation between a released object and a named physical target.",
+      "rules": [
+        {
+          "source_condition_id": "Go-01",
+          "category": "Goal",
+          "failure": "WrongPosition",
+          "predicate_template": "on(<object>, <target>) == True",
+          "predicate_meaning": "<object> rests on an upward-facing supporting surface of <target> (a table, shelf, tray, plate or lid), in stable contact and held up against gravity by that surface, and is no longer held by the gripper. It asserts support only, not containment.",
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "release"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate for each task-specified object-target pair where the object is intended to be placed on the named supporting target.",
+          "prohibitions": []
+        },
+        {
+          "source_condition_id": "Go-02",
+          "category": "Goal",
+          "failure": "WrongPosition",
+          "predicate_template": "inside(<object>, <target>) == True",
+          "predicate_meaning": "<object> has gone into the interior of <target> -- a container such as a box, drawer, basket, bin, bowl, cup or fridge -- and is not merely on its outer surface or rim.",
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "release"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate for each task-specified object and named container target that the release is intended to place the object inside.",
+          "prohibitions": [
+            "Do not check precondition on the first release waypoint of each placement run."
+          ]
+        },
+        {
+          "source_condition_id": "Go-03",
+          "category": "Goal",
+          "failure": "WrongPosition",
+          "predicate_template": "next_to(<object>, <target>) == True",
+          "predicate_meaning": "<object> and <target> rest on the same supporting surface, adjacent to one another with no third object between them and separated by a gap small relative to the objects themselves. It asserts neither support of one by the other nor containment.",
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "release"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate for each released object and named target that the task specifies should end up directly next to one another.",
+          "prohibitions": []
+        },
+        {
+          "source_condition_id": "Go-04",
+          "category": "Goal",
+          "failure": "TaskEffectFailure",
+          "predicate_template": "open(<object>) == True",
+          "predicate_meaning": "<object> is a door: a hinged or sliding panel that covers an opening in a fixed body (a door, a fridge/microwave/grill door, a box or toilet lid) and whose only two meaningful states are open and closed. The predicate holds when that panel is displaced from its frame far enough to leave the opening it covers accessible.",
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "push"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate <object> with the task-specified door or lid that the robot opens by non-grasping contact.",
+          "prohibitions": [
+            "Do not check this predicate as a precondition on the final push waypoint that produces the opening effect."
+          ]
+        },
+        {
+          "source_condition_id": "Go-05",
+          "category": "Goal",
+          "failure": "TaskEffectFailure",
+          "predicate_template": "closed(<object>) == True",
+          "predicate_meaning": "<object> is a door: a hinged or sliding panel that covers an opening in a fixed body (a door, a fridge/microwave/grill door, a box or toilet lid) and whose only two meaningful states are open and closed. The predicate holds when that panel is fully seated against its frame, leaving the opening it covers not accessible.",
+          "timing": {
+            "check_type": "postcondition",
+            "applicable_primitives": [
+              "push"
+            ],
+            "per_primitive": null,
+            "occurrence": "every_matching_waypoint"
+          },
+          "generation_rule": "Instantiate for the specific door object that the task requires to be closed at completion.",
+          "prohibitions": [
+            "Do not check this predicate as a precondition on the final push waypoint that produces the closing effect."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "transition": {
+    "arrival_floor": 0.015,
+    "arrival_scale": 1.3,
+    "prop_k_min": 1.5,
+    "prop_ratio_scale": 1.3,
+    "prop_window": 5,
+    "prop_floor": 0.01,
+    "rise_scale": 1.5
+  },
+  "orientation": {
+    "arrival_floor": 0.1745,
+    "arrival_scale": 1.3,
+    "prop_k_min": 1.5,
+    "prop_ratio_scale": 1.3,
+    "prop_window": 5,
+    "prop_floor": 0.1,
+    "rise_scale": 1.5
+  },
+  "collision": {
+    "method": 3,
+    "torque_k": 3.0,
+    "max_floor": true,
+    "baseline_window": 10,
+    "rise_fraction": 1.0,
+    "gate_margin": 0.05,
+    "gate_std_k": 0.0,
+    "momentum_version": 1,
+    "momentum_gain": 25.0,
+    "time_step": 0.05,
+    "residual_floor": 3.0,
+    "residual_joint_multipliers": [
+      5.0,
+      1.1,
+      1.1,
+      1.1,
+      1.1,
+      2.0,
+      1.1
+    ],
+    "residual_warmup_multiplier": 1.1,
+    "residual_settle_steps": 3,
+    "residual_min_joints": 1
+  },
+  "slip": {
+    "grip_k": 2.0,
+    "grip_floor": 0.3,
+    "grip_ceiling": null,
+    "min_force": 0.2
+  }
+}

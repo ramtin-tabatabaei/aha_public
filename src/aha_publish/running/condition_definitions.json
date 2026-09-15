@@ -1,0 +1,169 @@
+{
+  "description": "Single source of truth for how the VLM auditor should interpret BT condition predicates during interactive pre/post checkpoint checks. Keyed by predicate name; object arguments are substituted in at runtime. Edit this file to change how conditions are explained to the model.",
+
+  "general_guidance": [
+    "Judge each condition only from the supplied images for the current checkpoint. Do not use simulator state, action commands, previous checkpoints, or assumptions about what should have happened.",
+    "Evaluate only the predicate currently being queried. Do not require unrelated conditions to hold.",
+    "Follow the predicate-specific definition and its dedicated guidance section. Predicate-specific instructions override the general camera-view order.",
+    "Identify every named object using its visible attributes, such as colour, size, shape, and relative position. An object satisfies the predicate only when it matches all attributes stated in its name.",
+    "When an object name BEGINS with a positional or ordinal word (bottom, top, middle, upper, lower, left, right, front, back, near, far, first, second, third, fourth, last), that word selects one specific instance out of several identical-looking siblings, and picking the wrong sibling makes the whole judgement wrong. Before judging, find every sibling instance in the scene, order them along the axis the word names, and confirm which one the name refers to.",
+    "Order siblings this way: top/upper/bottom/lower by height in the scene (top = highest); left/right by the horizontal position as seen in that camera view, stated relative to the view you are using; front/back and near/far by distance from the robot base (near/front = closest to the robot); ordinals such as first, second, third count from the top for stacked objects (drawers, shelves, rungs) and from the nearest or leftmost side otherwise, unless the predicate definition says otherwise.",
+    "Use front_rgb and side_rgb to work out which instance the robot is actually manipulating: these two external views show the gripper's height, depth, and lateral position relative to the whole set of siblings, so they are the views that reveal which one the gripper is at. Do not decide which sibling is being manipulated from wrist_rgb alone; the wrist view is too close to show the siblings it is not pointing at, so use it only to confirm the choice made from front_rgb and side_rgb.",
+    "State in the explanation which sibling you selected, how you ranked them, and which of front_rgb or side_rgb showed the gripper at that instance, for example 'three drawers visible in side_rgb; the bottom one is the lowest of the three and the gripper is at its handle'. If the views do not let you distinguish the named sibling from its siblings, or the sibling count does not match, return uncertain instead of judging a different instance.",
+    "Use all informative camera views together. Do not decide from a single view when another view provides clearer or contradictory geometric evidence.",
+    "Treat apparent overlap in one image as insufficient evidence of physical contact, containment, support, or alignment. Perspective can make spatially separated objects appear to overlap.",
+    "Return satisfied only when the images provide positive evidence that the asserted condition holds.",
+    "Return not_satisfied when the images provide positive evidence of a decisive contradiction.",
+    "Return uncertain only when neither the condition nor a decisive contradiction can be established because the relevant object, gripper, contact region, or spatial relationship is occluded or not visible clearly enough.",
+    "Do not return uncertain when the images clearly show that the condition is false.",
+    "In the explanation, state the specific visual evidence used, including the relevant objects, camera views, visible contact or separation, and spatial relationship."
+  ],
+
+  "gripper_and_grasp_guidance": [
+    "Use this guidance only for predicates concerning gripper state, grasping, holding, releasing, or pressing contact.",
+    "In wrist_rgb, identify the two fingers by tracing each slim grey finger from the robot hand to its terminal black fingertip pad.",
+    "A dark region counts as a fingertip pad only when it is visibly connected to a grey gripper finger.",
+    "Judge gripper opening and object contact at the distal fingertip pads, not at the palm, hand housing, finger bases, or upper finger shafts.",
+    "Do not treat fixtures, stands, posts, brackets, shadows, background regions, object edges, or image-frame edges as gripper fingers or fingertip pads.",
+    "When wrist_rgb and a clearly informative external view disagree, use the view that more directly shows the physical gripper-object relationship. Do not mark uncertain merely because the views differ."
+  ],
+
+  "alignment_and_orientation_guidance": [
+    "Use this guidance only for predicates concerning grasp-ready position or gripper orientation relative to an object.",
+    "Use side_rgb and front_rgb as the primary views because they normally provide the clearest evidence of gripper-object position, and depth. Use wrist_rgb as supporting evidence, as it shows the approach direction and whether the object in the end effecter direction.",
+    "A valid grasp-ready position may be above, beside or angled relative to the object, depending on the intended grasp. Do not require every grasp to be vertically above the object."
+  ],
+
+  "spatial_relation_guidance": [
+    "Use side_rgb, front_rgb as the primary views. Select the view or combination of views that best reveals the relevant horizontal position, vertical position, support, containment, or articulated state.",
+    "Use wrist_rgb only as supporting evidence.",
+    "Do not infer a spatial relation from apparent overlap in a single two-dimensional image."
+  ],
+
+  "guidance_map": {
+    "object_in_gripper": "gripper_and_grasp_guidance",
+    "gripper_condition": "gripper_and_grasp_guidance",
+    "gripper_released": "gripper_and_grasp_guidance",
+    "end_effector_aligned_with": "alignment_and_orientation_guidance",
+    "gripper_oriented_for": "alignment_and_orientation_guidance",
+    "on": "spatial_relation_guidance",
+    "inside": "spatial_relation_guidance",
+    "next_to": "spatial_relation_guidance",
+    "above": "spatial_relation_guidance",
+    "closed": "spatial_relation_guidance"
+  },
+
+  "placeholders": "Definitions may contain <object>, <target>, <reference>, or <args>. <args> expands to the full argument list of the condition; the others are filled positionally from the condition's arguments.",
+  "sequence_predicates": [],
+  "predicates": {
+    "Object_found": {
+      "signature": "Object_found(<args>) == True",
+      "definition": [
+        "True when all of the named objects (<args>) are visibly present in the scene in the images.",
+        "If a name carries an attribute prefix, the matching visible object must have that attribute;",
+        "an object of the same shape but a different color/size/position does not satisfy it."
+      ]
+    },
+    "selected_object": {
+      "signature": "selected_object(<object>) == True",
+      "definition": [
+        "True when <object> is the object the robot is about to act on for this step and it is the correct/intended target visible in the scene (not a different look-alike object).",
+        "When <object> carries an attribute prefix (e.g. red_block), the robot must be engaging the instance with that color/size/position, not a same-shaped object that differs in that attribute."
+      ]
+    },
+    "end_effector_aligned_with": {
+    "signature": "end_effector_aligned_with(<object>) == True",
+    "definition": [
+      "True when the gripper is in a pre-grasp, grasp-ready position relative to <object>, such that a short final approach along its current approach direction followed by finger closure would engage <object>.",
+      "At this stage, <object> must not already be held by the gripper. Check all available views to verify that <object> is not between and clamped by the gripper fingers, and there is no touch of the gripper and the <object>",
+      "Mark not_satisfied if <object> is clearly already held or clamped by the gripper, or there is a touch.",
+      "Mark not_satisfied when the gripper is clearly too far away, laterally offset, at the wrong height or depth, or otherwise positioned so that a short final approach and finger closure would miss <object>.",
+      "Use side_rgb and front_rgb to judge the gripper-object distance, height, depth, and lateral alignment, and use wrist_rgb to judge whether <object> lies along the gripper's approach direction.",
+      "Seeing <object> in wrist_rgb is strong positive evidence of alignment, because the wrist camera looks along the gripper's approach direction. When <object> appears near the centre of wrist_rgb, treat this as direct evidence that the gripper is close to and pointing at <object>.",
+      "Do not mark not_satisfied for lateral or depth offset seen in side_rgb or front_rgb when wrist_rgb clearly shows <object> centred. Apparent separation in a single external view is often projection, not real offset.",
+      "Mark satisfied only when the combined views show that <object> is not already held and that the gripper is sufficiently close and positioned for a short final approach followed by successful closure."
+    ]
+  },
+    "gripper_oriented_for": {
+    "signature": "gripper_oriented_for(<object>) == True",
+    "definition": [
+      "True when the gripper's finger-closing direction and approach direction are compatible with grasping <object>.",
+      "Evaluate only the gripper's orientation relative to <object>; do not use distance, proximity, or positional offset to decide this predicate.",
+      "There is no single required angle: top, side, angled, or reaching-in orientations are valid when closing the fingers would bracket and engage the object.",
+      "Mark not_satisfied when the gripper is clearly rotated so that the fingers would close across empty space, press against the object without bracketing it, or approach along an incompatible axis."
+    ]
+  },
+    "gripper_condition": {
+    "signature": "gripper_condition = Open | Closed",
+    "definition": [
+      "Judge only the physical binary gripper state: Open or Closed. Do not infer the state from what the robot is expected to be doing.",
+      "Inspect side_rgb and front_rgb first. Use wrist_rgb when these views do not clearly show the gripper configuration.",
+      "Identify the two gripper fingers and their distal fingertip pads before deciding. Judge the state at the distal pads, never at the finger bases or upper shafts: the shafts are always separated even when the pads are clamped together.",
+      "Open: the two fingers are spread outward with a wide opening between the distal fingertip pads, and that opening contains only empty background. An opening occupied by an object is not evidence of Open.",
+      "Closed: the two fingers are converged inward, either nearly touching pad-to-pad or clamped in contact with an object from opposite sides.",
+      "Suspension rule: if an object lies between the fingers and is held off every support surface with the gripper as its only plausible support, classify the gripper as Closed. A suspended object cannot be supported by an open gripper, so this holds even when the pads and contact points are occluded.",
+      "If an object lies between the fingers and is resting on a support surface, check for background (table, floor, or scene) visible between each fingertip pad and the object. Background visible between a pad and the object at pad level is decisive evidence of no contact on that side; if visible on both sides, classify Open versus Closed purely from the finger spread, exactly as if no object were present.",
+      "Classify the gripper as Closed around a supported object only when the pads visibly contact or press against it from opposite sides with no background between pad and object.",
+      "When the pads or contact regions are occluded by the held object, the hand housing, or the camera angle, do not classify Open from the visible gap between the upper finger structures; judge convergence from the external views and the suspension rule instead.",
+      "Use all informative views together. If front_rgb or side_rgb clearly shows the finger spread or the object's support situation, prefer that evidence.",
+      "Return uncertain only when no view shows the finger spread, the pad-object contact, or the object's support situation well enough to apply the rules above.",
+      "Return satisfied when the observed state matches the asserted value; otherwise return not_satisfied."
+    ]
+  },
+    "object_in_gripper": {
+    "signature": "object_in_gripper(<object>) == True",
+    "definition": [
+      "True when <object> is held by the gripper, clamped between the fingertip pads from opposite sides.",
+      "Use wrist_rgb first when it clearly shows the gripper-object relationship, then side_rgb and front_rgb as supporting views. When wrist_rgb is too close to the object to show the fingertip pads, judge primarily from the external views.",
+      "Decisive evidence FOR the grasp, any one of which is sufficient: (a) the fingertip pads visibly touch or press against <object> from opposite sides; (b) <object> is suspended off any support surface with the gripper as its only plausible support; (c) the fingers are visibly converged onto opposite sides of <object> with no background visible between either pad and the object where the pad-object boundary can be seen.",
+      "Decisive evidence AGAINST the grasp: background (table, floor, or scene) visible between a fingertip pad and <object> at pad level rules out contact on that side; if visible on either side, mark not_satisfied. Also mark not_satisfied when the gripper is closed on empty space, or when <object> lies clearly outside the region between the fingers.",
+      "Occlusion of the pad-object contact region is NOT evidence against the grasp. When the pads or contact points are hidden by the hand, the object, or the camera angle, decide from enclosure geometry in the external views: fingers converged onto the object's opposite sides with no visible gap supports satisfied.",
+      "<object> touching or resting on a support surface does NOT by itself contradict the grasp. Tall or standing objects can be clamped by the gripper while still contacting the table. Use table contact as evidence against the grasp only when it is combined with a visible pad-object gap or with the gripper positioned clearly away from the object.",
+      "Do not mark satisfied from object centring in wrist_rgb, apparent image overlap, or presence between the upper finger shafts alone; enclosure must be at the fingertip-pad level, with the fingers converged rather than spread.",
+      "Return uncertain only when no view shows the pad-object gaps, the enclosure geometry, or the object's support situation well enough to apply any of the rules above."
+    ]
+  },
+    "gripper_released": {
+    "signature": "gripper_released(<object>) == True",
+    "definition": [
+      "True when <object> is no longer being held or supported by the gripper after an intended release.",
+      "Use all available views to judge whether <object> is independently resting on its support surface or is still physically clamped by the gripper.",
+      "The object may remain between the gripper fingers immediately after release; this alone does not mean it is still held.",
+      "Background (table, floor, or scene) visible between a fingertip pad and <object> at pad level is decisive evidence of no contact on that side. If such a gap is visible on both sides and <object> is resting on the table, target, or other support surface, mark satisfied.",
+      "Do not remain uncertain about possible light or residual clamping when background gaps are visible between the pads and <object>; a visible gap on a side rules out clamping from that side.",
+      "When the pad-object gaps are hard to resolve, mark satisfied if the gripper fingers are spread outward and <object> is visibly resting independently on its support surface.",
+      "Mark not_satisfied when the pads visibly contact <object> from opposite sides with no background between pad and object, or when <object> hangs from the gripper without independent support.",
+      "Visible contact with only one finger is not sufficient by itself to conclude that <object> is still held.",
+      "Return uncertain only when neither the pad-object gaps nor the object's independent support can be seen in any view."
+    ]
+  },
+    "closed": {
+      "signature": "closed(<object>) == True",
+      "definition": [
+        "True when <object> is an openable part or container that has reached its closed, latched, or shut state in the images.",
+        "The condition is about the object's closed state, not about the gripper fingers.",
+        "Do not interpret it as the object resting on another object."
+      ]
+    },
+    "on": {
+      "signature": "on(<object>, <target>) == true",
+      "definition": "True when <object> is resting on top of <target>, supported by it, in the images."
+    },
+    "inside": {
+      "signature": "inside(<object>, <target>) == true",
+      "definition": [
+        "True when <object> has gone into <target>.",
+        "For targets whose success condition is passage through an opening, the predicate is satisfied when <object> visibly passes through the required opening during the observed sequence, even if it does not remain inside afterward.",
+        "If <target> is a closed container, bin, slot, or holder meant to retain the object, it must end up resting within the target."
+      ]
+    },
+    "next_to": {
+      "signature": "next_to(<object>, <target>) == true",
+      "definition": "True when <object> is positioned directly adjacent to <target>, close together, without necessarily touching or stacking."
+    },
+    "above": {
+      "signature": "above(<object>, <target>) == true",
+      "definition": "True when <object> is positioned above <target> (higher and roughly over it) in the images, not yet resting on it."
+    }
+  }
+}

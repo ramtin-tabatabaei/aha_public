@@ -1,0 +1,14 @@
+outputs/
+external/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+.env.*
+!.env.example
+api_key*.txt
+*.log
+*.egg-info/
+build/
+dist/
