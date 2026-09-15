@@ -117,7 +117,9 @@ below. Use a new `AHA_OUTPUT_ROOT` to keep a previous experiment separately.
 
 ## Run one task, in order
 
-Replace `basketball_in_hoop` with a task name from your failgen configs.
+Replace `basketball_in_hoop` with a task name from your failgen configs. Before
+step 3a, edit the generator and prepare the taxonomy input as described in
+[Condition-rule catalogue](#condition-rule-catalogue).
 
 ```bash
 # 1. Inspect the existing task model.
@@ -126,7 +128,11 @@ python 01_ttm_context/main.py --task basketball_in_hoop
 # 2. Capture images and gripper evidence, then generate the description.
 python 02_descriptions/main.py --task basketball_in_hoop
 
-# 3. Generate the behavior-tree conditions.
+# 3a. Generate the shared condition-rule catalogue after editing its inputs.
+python src/aha_publish/behavior_trees/condition_rule_generator.py \
+  --input config/condition_taxonomy_input.json
+
+# 3b. Generate the task's behavior-tree conditions using that catalogue.
 python 03_behavior_trees/main.py --task basketball_in_hoop
 
 # Calibrate before the first monitored evaluation.
@@ -186,16 +192,43 @@ reports with `--skip-existing`.
 
 ### Condition-rule catalogue
 
-The behavior-tree generator loads
-`src/aha_publish/behavior_trees/generated_condition_rules.json`. Its generator,
-`condition_rule_generator.py`, lives in the same directory and writes there by
-default. To regenerate the catalogue, provide an authored taxonomy input JSON
-(not bundled in this release) and set `OPENAI_API_KEY`:
+Before generating behavior trees, customize and run
+`src/aha_publish/behavior_trees/condition_rule_generator.py`:
+
+1. Edit the generator's `PRIMITIVE_DEFINITIONS`, `ACTION_SEQUENCE`, and
+   `SYSTEM_PROMPT` if your primitive semantics or rule-generation instructions
+   need to change.
+2. Save your authored taxonomy as `config/condition_taxonomy_input.json`.
+   This input is not bundled in the release. Edit its categories and conditions,
+   including `failure`, `predicate_template`, optional `predicate_meaning`,
+   `occurrence`, and `stage_rule` to define what should be checked and when.
+3. Activate the local environment, set `OPENAI_API_KEY`, validate the input,
+   and generate the catalogue:
 
 ```bash
+source scripts/activate_local.sh
+
+# Check the authored input without an API call.
 python src/aha_publish/behavior_trees/condition_rule_generator.py \
-  --input /path/to/condition_taxonomy_input.example.json
+  --input config/condition_taxonomy_input.json --validate-only
+
+# Generate the rules; requires OPENAI_API_KEY.
+python src/aha_publish/behavior_trees/condition_rule_generator.py \
+  --input config/condition_taxonomy_input.json
+
+# Rebuild each affected task's BT after changing the shared catalogue.
+python 03_behavior_trees/main.py --task basketball_in_hoop
 ```
+
+The generator writes `generated_condition_rules.json`,
+`generated_condition_rules.csv`, and `generated_condition_rules.txt` beside its
+script in `src/aha_publish/behavior_trees/`. Step 3 reads that JSON automatically.
+Generation replaces these files; edits to the output JSON will be overwritten
+the next time the generator runs.
+
+The catalogue is shared across tasks, so regenerate it when the taxonomy or
+generator changes. `run_pipeline.py` uses the existing catalogue and does not
+run the condition-rule generator automatically.
 
 ## Straightforward threshold calculation
 
